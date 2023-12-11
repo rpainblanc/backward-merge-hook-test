@@ -1,28 +1,41 @@
 #!/bin/bash
 
-. git-sh-setup
-
-SOURCE_BRANCH="${GIT_REFLOG_ACTION#* }"
 CURRENT_BRANCH=$(git branch --show-current)
-VERSION_BRANCH_NAME=$(echo ${CURRENT_BRANCH} | sed s,release/,,)
+# Do nothing if we are not on a release branch
+if [[ ! "${CURRENT_BRANCH}" =~ "release" ]]
+then
+    exit 0
+fi
 
-MAJOR=$(echo ${VERSION_BRANCH_NAME} | cut -f 1 -d.)
-MINOR=$(echo ${VERSION_BRANCH_NAME} | cut -f 2 -d.)
+VERSION_BRANCH_NAME=$(echo "${CURRENT_BRANCH}"| sed s,single-release/,, | sed s,release/,,)
+if [ "$#" -eq 0 ]; then
+    SOURCE_BRANCH="${GIT_REFLOG_ACTION#* }"
+else
+    SOURCE_BRANCH="${1}"
+fi
+
+
+MAJOR=$(echo "${VERSION_BRANCH_NAME}" | cut -f 1 -d.)
+NEXT_MAJOR=$((MAJOR+1))
+
+MINOR=""
+NEXT_MINOR=""
+if [[ "${VERSION_BRANCH_NAME}" =~ "\." ]] # check if a minor version exists
+then
+    MINOR=$(echo "${VERSION_BRANCH_NAME}" | cut -f 2 -d.)
+    NEXT_MINOR=$((MINOR+1))
+fi
 
 # git merge-base --is-ancestor returns 0 on success, so we inverse the condition to check if the tag is here
-# Check if a major version is in the history
-NEXT_MAJOR=$((MAJOR+1))
-CMD=$(git merge-base --is-ancestor ${NEXT_MAJOR}.0_init ${SOURCE_BRANCH} &> /dev/null) || false
-if [ $? -eq 0 ] ; then 
-    echo "Found tag  ${NEXT_MAJOR}.0_init in the git history, aborting wrong backward merge"
-    exit 1
-fi
-
-# Check if a next minor version is in the history
-NEXT_MINOR=$((MINOR+1))
-CMD=$(git merge-base --is-ancestor ${MAJOR}.${NEXT_MINOR}_init ${SOURCE_BRANCH} &> /dev/null) || false
-if [ $? -eq 0 ] ; then 
-    echo "Found tag ${MAJOR}.${NEXT_MINOR}_init in the git history, aborting wrong backward merge"
-    exit 1
-fi
-
+# it does not matter if the MINOR, or NEXT_MINOR does not exist, it will just skip it, same for the tags
+for branch in "master" "main" "release/${MAJOR}"  "release/${NEXT_MAJOR}" "release/${NEXT_MAJOR}.${NEXT_MINOR}" "${NEXT_MAJOR}.0_init" "${MAJOR}.${NEXT_MINOR}_init"
+do
+    if [[ ! "${CURRENT_BRANCH}" == "${branch}" ]]
+    then
+        CMD=$(git merge-base --is-ancestor ${branch} ${SOURCE_BRANCH} &> /dev/null) || false
+        if [ $? -eq 0 ] ; then
+            echo "Found \"${branch}\" in the git history, aborting wrong backward merge"
+            exit 1
+        fi
+    fi
+done
