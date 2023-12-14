@@ -1,6 +1,13 @@
 #!/bin/bash
 
-CURRENT_BRANCH=$(git branch --show-current)
+if [ "$#" -eq 0 ]; then
+    CURRENT_BRANCH=$(git branch --show-current)
+    SOURCE_BRANCH="${GIT_REFLOG_ACTION#* }"
+else
+    CURRENT_BRANCH="${1}"
+    SOURCE_BRANCH="${2}"
+fi
+
 # Do nothing if we are not on a release branch
 if [[ ! "${CURRENT_BRANCH}" =~ "release" ]]
 then
@@ -8,12 +15,6 @@ then
 fi
 
 VERSION_BRANCH_NAME=$(echo "${CURRENT_BRANCH}"| sed s,single-release/,, | sed s,release/,,)
-if [ "$#" -eq 0 ]; then
-    SOURCE_BRANCH="${GIT_REFLOG_ACTION#* }"
-else
-    SOURCE_BRANCH="${1}"
-fi
-
 
 MAJOR=$(echo "${VERSION_BRANCH_NAME}" | cut -f 1 -d.)
 NEXT_MAJOR=$((MAJOR+1))
