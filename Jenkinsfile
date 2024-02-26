@@ -89,7 +89,8 @@ def notifyBuild(String buildStatus = 'STARTED') {
     // Send notifications
     String branchName = getBranchName()
     if (branchName != null && (branchName.startsWith("release") || branchName.startsWith("single-release") || branchName == "master")) {
-        def slackChannel = (buildStatus == 'SUCCESS') ? '#rd-notifications' : '#rd-general'
+        // def slackChannel = (buildStatus == 'SUCCESS') ? '#rd-notifications' : '#rd-general'
+        def slackChannel = '#rd-jenkins-tests'
         slackSend color: colorCode, message: summary, notifyCommitters: true, channel: slackChannel
     }
 }
