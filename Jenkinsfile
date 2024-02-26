@@ -30,7 +30,7 @@ pipeline {
                                 sh "./pre-merge-commit ${env.BRANCH_NAME} ${env.CHANGE_TARGET}"
                             } else {
                                 // On purpose, current == target, just to check in current history
-                                sh "./tools/git-hooks/pre-merge-commit ${env.BRANCH_NAME} ${env.BRANCH_NAME}"
+                                sh "./pre-merge-commit ${env.BRANCH_NAME} ${env.BRANCH_NAME}"
                             }
                         } catch (e) {
                             notifyBuild("POTENTIAL_MERGE_ISSUE")
